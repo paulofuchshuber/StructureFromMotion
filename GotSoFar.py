@@ -17,9 +17,10 @@ image_directory = r'C:\Fontes\triedsohard\data\cube'
 image_files = sorted(os.listdir(image_directory))
 
 cv2.namedWindow("Images", cv2.WINDOW_NORMAL)
-first_image = cv2.imread(os.path.join(image_directory, '000000.jpg'))
+print(image_files[0])
+first_image = cv2.imread(os.path.join(image_directory, image_files[0]))
 height, width = first_image.shape[:2]
-#cv2.resizeWindow("Images", width * 2, height)
+cv2.resizeWindow("Images", width * 2 , height)
 
 for image_file in image_files:
     if previous_img is not None:
