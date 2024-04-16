@@ -22,9 +22,8 @@ height, width = first_image.shape[:2]
 #cv2.resizeWindow("Images", width * 2, height)
 
 for image_file in image_files:
-    # if previous_img is not None:
-    #     previous_img = current_img[:, height//2:]
-    #     cv2.imshow("teste", previous_img)
+    if previous_img is not None:
+        previous_img = current_img[:, width:]
     current_img = cv2.imread(os.path.join(image_directory, image_file))    
 
     for point in current_points:
