@@ -53,38 +53,55 @@ for image_file in image_files:
     all_points.append(current_points)
     current_points = []
 
-pontos_medios = [(sum(ponto[0] for ponto in linha) / len(linha), 
-                  sum(ponto[1] for ponto in linha) / len(linha)) for linha in all_points]
+pontos_medios = np.array([np.mean(linha, axis=0) for linha in all_points])
+pontos_medios = [tuple(ponto) for ponto in pontos_medios]
 
-matriz_diferencas = [[(ponto[0] - pontos_medios[i][0], ponto[1] - pontos_medios[i][1]) 
-                      for i, ponto in enumerate(linha)] for linha in all_points]
+print(pontos_medios)
+
+all_points = np.array(all_points)
+info = "\nall_points: {}x{};".format(all_points.shape[0], all_points.shape[1])
+print(info)
+
+matriz_diferencas = np.zeros_like(all_points)
+for i, linha in enumerate(all_points):
+    for j, ponto in enumerate(linha):
+        diff_x = ponto[0] - pontos_medios[i][0]
+        diff_y = ponto[1] - pontos_medios[i][1]
+        matriz_diferencas[i][j] = (diff_x, diff_y)
 
 coordenadas_x = [[ponto[0] for ponto in linha] for linha in matriz_diferencas]
 coordenadas_y = [[ponto[1] for ponto in linha] for linha in matriz_diferencas]
 matriz_separada = coordenadas_x + coordenadas_y
 
-print(matriz_separada)
+#print(matriz_separada)
 np.savetxt("matriz_entrada_tomasi_kanade.txt", matriz_separada, fmt='%.2f')
 
+matriz_diferencas = np.array(matriz_diferencas)
+info = "\nmatriz_diferencas: {}x{};".format(matriz_diferencas.shape[0], matriz_diferencas.shape[1])
+print(info)
+matriz_separada = np.array(matriz_separada)
+info = "\nmatriz_separada: {}x{};".format(matriz_separada.shape[0], matriz_separada.shape[1])
+print(info)
 U, S, Vt = np.linalg.svd(matriz_separada)
-print("\nMatriz U:")
-print(U)
-print("\nValores Singulares (Sigma):")
-print(S)
-print("\nMatriz V transposta:")
-print(Vt)
+#print("\nMatriz U:")
+#print(U)
+#print("\nValores Singulares (Sigma):")
+#print(S)
+#print("\nMatriz V transposta:")
+#print(Vt)
 
-Sigma = np.diag(S)
+Sigma = np.diag(S) #ajustar o tamanho de sigma.
 sqrt_Sigma = np.sqrt(Sigma)
-
+info = "\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1])
+print(info)
 U = U[:, :Sigma.shape[0]]
 
-info = "U: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1])
+info = "\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1])
 print(info)
 
-resultado = np.dot(U, np.dot(Sigma, Vt))
+resultado = np.dot(U, np.dot(np.sqrt(Sigma), np.dot(np.sqrt(Sigma), Vt)))
 
-print("Resultado de U * Sigma * Vt:")
+print("\nResultado de U * Sigma * Vt:")
 print(resultado)
 
 cv2.destroyAllWindows()
