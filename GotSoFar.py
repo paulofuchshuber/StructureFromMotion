@@ -74,4 +74,17 @@ print(S)
 print("\nMatriz V transposta:")
 print(Vt)
 
+Sigma = np.diag(S)
+sqrt_Sigma = np.sqrt(Sigma)
+
+U = U[:, :Sigma.shape[0]]
+
+info = "U: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1])
+print(info)
+
+resultado = np.dot(U, np.dot(Sigma, Vt))
+
+print("Resultado de U * Sigma * Vt:")
+print(resultado)
+
 cv2.destroyAllWindows()
