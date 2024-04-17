@@ -64,5 +64,14 @@ coordenadas_y = [[ponto[1] for ponto in linha] for linha in matriz_diferencas]
 matriz_separada = coordenadas_x + coordenadas_y
 
 print(matriz_separada)
+np.savetxt("matriz_entrada_tomasi_kanade.txt", matriz_separada, fmt='%.2f')
+
+U, S, Vt = np.linalg.svd(matriz_separada)
+print("\nMatriz U:")
+print(U)
+print("\nValores Singulares (Sigma):")
+print(S)
+print("\nMatriz V transposta:")
+print(Vt)
 
 cv2.destroyAllWindows()
