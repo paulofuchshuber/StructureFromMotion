@@ -4,14 +4,8 @@ import numpy as np
 
 previous_img = None
 current_img = None
+all_points = []
 current_points = []
-
-def click_event(event, x, y, flags, param):
-    if event == cv2.EVENT_LBUTTONDOWN:
-        current_points.append((x, y))
-        cv2.circle(current_img, (x, y), 3, (0, 0, 255), -1)
-        cv2.putText(current_img, str(len(current_points)), (x-10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-        cv2.imshow("Images", current_img)
 
 image_directory = r'C:\Fontes\triedsohard\data\cube'
 image_files = sorted(os.listdir(image_directory))
@@ -21,6 +15,13 @@ print(image_files[0])
 first_image = cv2.imread(os.path.join(image_directory, image_files[0]))
 height, width = first_image.shape[:2]
 cv2.resizeWindow("Images", width * 2 , height)
+
+def click_event(event, x, y, flags, param):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        current_points.append((x - width, y))
+        cv2.circle(current_img, (x, y), 3, (0, 0, 255), -1)
+        cv2.putText(current_img, str(len(current_points)), (x-10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+        cv2.imshow("Images", current_img)
 
 for image_file in image_files:
     if previous_img is not None:
@@ -49,7 +50,19 @@ for image_file in image_files:
                 break
 
     print(f"Pontos da imagem {image_file}: {current_points}")
-
+    all_points.append(current_points)
     current_points = []
+
+pontos_medios = [(sum(ponto[0] for ponto in linha) / len(linha), 
+                  sum(ponto[1] for ponto in linha) / len(linha)) for linha in all_points]
+
+matriz_diferencas = [[(ponto[0] - pontos_medios[i][0], ponto[1] - pontos_medios[i][1]) 
+                      for i, ponto in enumerate(linha)] for linha in all_points]
+
+coordenadas_x = [[ponto[0] for ponto in linha] for linha in matriz_diferencas]
+coordenadas_y = [[ponto[1] for ponto in linha] for linha in matriz_diferencas]
+matriz_separada = coordenadas_x + coordenadas_y
+
+print(matriz_separada)
 
 cv2.destroyAllWindows()
