@@ -1,6 +1,7 @@
 import cv2
 import os
 import numpy as np
+from scipy.optimize import newton
 
 previous_img = None
 current_img = None
@@ -22,6 +23,13 @@ def click_event(event, x, y, flags, param):
         cv2.circle(current_img, (x, y), 3, (0, 0, 255), -1)
         cv2.putText(current_img, str(len(current_points)), (x-10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
         cv2.imshow("Images", current_img)
+
+def equations(variables, A, C):
+    B = variables.reshape((3, 3))
+    eq1 = np.dot(np.dot(A.T, B), A) - 1
+    eq2 = np.dot(np.dot(C.T, B), C) - 1
+    eq3 = np.dot(np.dot(A.T, B), C)
+    return np.concatenate((eq1.flatten(), eq2.flatten(), eq3.flatten()))
 
 for image_file in image_files:
     if previous_img is not None:
@@ -93,21 +101,37 @@ print("\nU1: {}x{}; S1: {}x{}; Vt1: {}x{};".format(U1.shape[0], U1.shape[1], S1.
 motion = np.dot(U1, sqrt_S1)
 motion_line = motion[:,:1]
 #print(f"motion_line : {motion_line}")
-#print(type(motion_line))
 middle = len(motion_line) // 2
-iValues = motion_line[:middle] 
+iValues = motion_line[:middle]
 jValues = motion_line[middle:]
+#print(f"len i: {len(iValues)}, len j: {len(jValues)}")
 
 # it * Q * Qt * i = 1
 # jt * Q * Qt * j = 1
 # it * Q * Qt * j = 0
 
+A = iValues[:3]
+C = jValues[:3]
+#print(f"A: {A.shape[0], A.shape[1]}, C: {C.shape[0], C.shape[1]}")
 
+initial_guess = np.random.rand(3, 3)
+newtonSolution = newton(equations, initial_guess, args=(A, C), tol=1e-2)
+print(f'NewtonSolution : {newtonSolution.shape[0]}x{newtonSolution.shape[1]}')
+print(newtonSolution)
+#Q = np.linalg.cholesky(newtonSolution)
+#Qt = np.transpose(Q)
+Q, Qt = np.linalg.qr(newtonSolution)
 
-# structure = np.dot(sqrt_Sigma, Vt)
-# structure = np.transpose(structure[:3])
+Vt = Vt[:3:]
 
-# M, N = structure.shape
-# np.savetxt('structure.xyz', structure, fmt='%.2f', delimiter=' ', header=f"{M}\nStructure\n", comments='')
+print("\nQt: {}x{}; sqrt_S1: {}x{}; Vt: {}x{};".format(Qt.shape[0], Qt.shape[1], sqrt_S1.shape[0], sqrt_S1.shape[1], Vt.shape[0], Vt.shape[1]))
+structure = np.dot(Qt, np.dot(sqrt_S1, Vt))
+print('STRUCT:')
+print(structure)
+
+structure = np.transpose(structure)
+
+M, N = structure.shape
+np.savetxt('structure.xyz', structure, fmt='%.2f', delimiter=' ', header=f"{M}\nStructure\n", comments='')
 
 cv2.destroyAllWindows()
