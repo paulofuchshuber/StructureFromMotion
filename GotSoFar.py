@@ -39,13 +39,13 @@ for image_file in image_files:
         cv2.imshow("Images", current_img)
         cv2.setMouseCallback("Images", click_event)
 
-    while True:
+    while True: #Todo: Contar quantidades de pontos na img1 e usar mesma qtde para as demais
         key = cv2.waitKey(1)
         if key == 27:  # 27 ASCII Esc
             break
         elif key == 32:  # 32 ASCII espaço
             if len(current_points) == 0:
-                print("Por favor, clique nos pontos antes de pressionar a barra de espaço.")
+                print("Clique nos pontos antes de pressionar a barra de espaço.")
             else:
                 break
 
@@ -72,7 +72,6 @@ coordenadas_x = [[ponto[0] for ponto in linha] for linha in matriz_diferencas]
 coordenadas_y = [[ponto[1] for ponto in linha] for linha in matriz_diferencas]
 matriz_separada = coordenadas_x + coordenadas_y
 
-#print(matriz_separada)
 np.savetxt("matriz_entrada_tomasi_kanade.txt", matriz_separada, fmt='%.2f')
 
 matriz_diferencas = np.array(matriz_diferencas)
@@ -83,25 +82,11 @@ print("\nmatriz_separada: {}x{};".format(matriz_separada.shape[0], matriz_separa
 
 U, S, Vt = np.linalg.svd(matriz_separada)
 
-Sigma = np.diag(S) #ajustar o tamanho de sigma.
-sqrt_Sigma = np.sqrt(Sigma)
-print("\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1]))
+# Sigma = np.diag(S) #Criar matriz sigma
+# structure = np.dot(sqrt_Sigma, Vt)
+# structure = np.transpose(structure[:3])
 
-U = U[:, :Sigma.shape[0]]
-
-print("\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1]))
-
-resultado = np.dot(U, np.dot(np.sqrt(Sigma), np.dot(np.sqrt(Sigma), Vt)))
-
-print("\nResultado de U * Sigma * Vt:")
-print(resultado)
-
-structure = np.dot(sqrt_Sigma, Vt)
-print("\nstructure: {}x{};".format(structure.shape[0], structure.shape[1]))
-print(structure)
-structure = np.transpose(structure[:3])
-
-M, N = structure.shape
-np.savetxt('structure.xyz', structure, fmt='%.2f', delimiter=' ', header=f"{M}\nStructure\n", comments='')
+# M, N = structure.shape
+# np.savetxt('structure.xyz', structure, fmt='%.2f', delimiter=' ', header=f"{M}\nStructure\n", comments='')
 
 cv2.destroyAllWindows()
