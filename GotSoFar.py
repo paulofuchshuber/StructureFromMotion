@@ -1,6 +1,7 @@
 import cv2
 import os
 import numpy as np
+from scipy.linalg import lu
 
 previous_img = None
 current_img = None
@@ -59,8 +60,7 @@ pontos_medios = [tuple(ponto) for ponto in pontos_medios]
 print(pontos_medios)
 
 all_points = np.array(all_points)
-info = "\nall_points: {}x{};".format(all_points.shape[0], all_points.shape[1])
-print(info)
+print("\nall_points: {}x{};".format(all_points.shape[0], all_points.shape[1]))
 
 matriz_diferencas = np.zeros_like(all_points)
 for i, linha in enumerate(all_points):
@@ -77,31 +77,52 @@ matriz_separada = coordenadas_x + coordenadas_y
 np.savetxt("matriz_entrada_tomasi_kanade.txt", matriz_separada, fmt='%.2f')
 
 matriz_diferencas = np.array(matriz_diferencas)
-info = "\nmatriz_diferencas: {}x{};".format(matriz_diferencas.shape[0], matriz_diferencas.shape[1])
-print(info)
+print("\nmatriz_diferencas: {}x{};".format(matriz_diferencas.shape[0], matriz_diferencas.shape[1]))
+
 matriz_separada = np.array(matriz_separada)
-info = "\nmatriz_separada: {}x{};".format(matriz_separada.shape[0], matriz_separada.shape[1])
-print(info)
+print("\nmatriz_separada: {}x{};".format(matriz_separada.shape[0], matriz_separada.shape[1]))
+
 U, S, Vt = np.linalg.svd(matriz_separada)
-#print("\nMatriz U:")
-#print(U)
-#print("\nValores Singulares (Sigma):")
-#print(S)
-#print("\nMatriz V transposta:")
-#print(Vt)
 
 Sigma = np.diag(S) #ajustar o tamanho de sigma.
 sqrt_Sigma = np.sqrt(Sigma)
-info = "\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1])
-print(info)
-U = U[:, :Sigma.shape[0]]
+print("\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1]))
 
-info = "\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1])
-print(info)
+#---------- Prova real de W = U * S * Vt
+# U = U[:, :Sigma.shape[0]]
+# print("\nU: {}x{}; Sigma: {}x{}; Vt: {}x{}".format(U.shape[0], U.shape[1], Sigma.shape[0], Sigma.shape[1], Vt.shape[0], Vt.shape[1]))
+# resultado = np.dot(U, np.dot(np.sqrt(Sigma), np.dot(np.sqrt(Sigma), Vt)))
+# print("\nResultado de U * Sigma * Vt:")
+# print(resultado)
+#----------
 
-resultado = np.dot(U, np.dot(np.sqrt(Sigma), np.dot(np.sqrt(Sigma), Vt)))
+structure = np.dot(sqrt_Sigma, Vt)
+print("\nstructure: {}x{};".format(structure.shape[0], structure.shape[1]))
+#print(structure)
 
-print("\nResultado de U * Sigma * Vt:")
-print(resultado)
+U = U[:Sigma.shape[0], :Sigma.shape[0]]
+
+motion = np.dot(U, sqrt_Sigma)
+print("\nmotion: {}x{};".format(motion.shape[0], motion.shape[1]))
+#print(motion)
+
+#structure = np.transpose(structure[:3])
+
+
+
+#M, N = structure.shape
+#np.savetxt('structure.xyz', structure, fmt='%.2f', delimiter=' ', header=f"{M}\nStructure\n", comments='')
+
+# identidade = np.eye(Sigma.shape[0])
+# motion_inv = np.linalg.inv(motion)
+
+# AB_invS = np.dot(motion_inv, np.dot(motion, np.linalg.inv(motion)))
+# Q, R = np.linalg.qr(AB_invS)
+# Q_inv = np.linalg.inv(Q)
+
+# result = np.dot(np.dot(Q_inv, sqrt_Sigma), Vt)
+# result = np.transpose(result[:3])
+# M, N = result.shape
+# np.savetxt('result.xyz', result, fmt='%.2f', delimiter=' ', header=f"{M}\nStructure\n", comments='')
 
 cv2.destroyAllWindows()
