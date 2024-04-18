@@ -81,8 +81,29 @@ matriz_separada = np.array(matriz_separada)
 print("\nmatriz_separada: {}x{};".format(matriz_separada.shape[0], matriz_separada.shape[1]))
 
 U, S, Vt = np.linalg.svd(matriz_separada)
+S = np.diag(S) #Criar matriz sigma
+print("\nU: {}x{}; S: {}x{}; Vt: {}x{};".format(U.shape[0], U.shape[1], S.shape[0], S.shape[1], Vt.shape[0], Vt.shape[1]))
 
-# Sigma = np.diag(S) #Criar matriz sigma
+U1 = U[:,:3]
+S1 = S[:3,:3]
+sqrt_S1 = np.sqrt(S1)
+Vt1 = Vt[:3,:]
+print("\nU1: {}x{}; S1: {}x{}; Vt1: {}x{};".format(U1.shape[0], U1.shape[1], S1.shape[0], S1.shape[1], Vt1.shape[0], Vt1.shape[1]))
+
+motion = np.dot(U1, sqrt_S1)
+motion_line = motion[:,:1]
+#print(f"motion_line : {motion_line}")
+#print(type(motion_line))
+middle = len(motion_line) // 2
+iValues = motion_line[:middle] 
+jValues = motion_line[middle:]
+
+# it * Q * Qt * i = 1
+# jt * Q * Qt * j = 1
+# it * Q * Qt * j = 0
+
+
+
 # structure = np.dot(sqrt_Sigma, Vt)
 # structure = np.transpose(structure[:3])
 
