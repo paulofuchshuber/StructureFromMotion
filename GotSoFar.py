@@ -2,6 +2,8 @@ import cv2
 import os
 import numpy as np
 from scipy.optimize import newton
+from scipy.optimize import least_squares
+from scipy.linalg import cholesky
 
 previous_img = None
 current_img = None
@@ -66,6 +68,7 @@ pontos_medios = [tuple(ponto) for ponto in pontos_medios]
 
 print(pontos_medios)
 
+#Todo: UTILIZAR METODO DE PIXELMATCH
 all_points = np.array(all_points)
 print("\nall_points: {}x{};".format(all_points.shape[0], all_points.shape[1]))
 
@@ -99,35 +102,23 @@ Vt1 = Vt[:3,:]
 print("\nU1: {}x{}; S1: {}x{}; Vt1: {}x{};".format(U1.shape[0], U1.shape[1], S1.shape[0], S1.shape[1], Vt1.shape[0], Vt1.shape[1]))
 
 motion = np.dot(U1, sqrt_S1)
-motion_line = motion[:,:1]
-#print(f"motion_line : {motion_line}")
-middle = len(motion_line) // 2
-iValues = motion_line[:middle]
-jValues = motion_line[middle:]
-#print(f"len i: {len(iValues)}, len j: {len(jValues)}")
-
-# it * Q * Qt * i = 1
-# jt * Q * Qt * j = 1
-# it * Q * Qt * j = 0
-
-A = iValues[:3]
-C = jValues[:3]
-#print(f"A: {A.shape[0], A.shape[1]}, C: {C.shape[0], C.shape[1]}")
+print("motion {}x{}".format(motion.shape[0], motion.shape[1]))
+middle = motion.shape[0] // 2
+A = motion[:middle, :] #iValues
+C = motion[middle:, :] #jValues
+A = motion[:3]
+C = motion[:3]
 
 initial_guess = np.random.rand(3, 3)
-newtonSolution = newton(equations, initial_guess, args=(A, C), tol=1e-2)
-print(f'NewtonSolution : {newtonSolution.shape[0]}x{newtonSolution.shape[1]}')
-print(newtonSolution)
-#Q = np.linalg.cholesky(newtonSolution)
-#Qt = np.transpose(Q)
-Q, Qt = np.linalg.qr(newtonSolution)
+result = newton(equations, initial_guess, args=(A, C))
+print(result)
 
-Vt = Vt[:3:]
+prova_real = np.dot(A, np.dot(result, C))
+print('prova_real')
+print(result)   #deve resultar em uma matriz identidade
 
-print("\nQt: {}x{}; sqrt_S1: {}x{}; Vt: {}x{};".format(Qt.shape[0], Qt.shape[1], sqrt_S1.shape[0], sqrt_S1.shape[1], Vt.shape[0], Vt.shape[1]))
-structure = np.dot(Qt, np.dot(sqrt_S1, Vt))
-print('STRUCT:')
-print(structure)
+#structure = np.dot(result, np.dot(sqrt_S1, Vt1))   #CORRIGIR PERSPECTIVA
+structure = np.dot(sqrt_S1, Vt1)
 
 structure = np.transpose(structure)
 
