@@ -110,12 +110,12 @@ A = motion[:3]
 C = motion[:3]
 
 initial_guess = np.random.rand(3, 3)
-result = newton(equations, initial_guess, args=(A, C))
-print(result)
 
-prova_real = np.dot(A, np.dot(result, C))
-print('prova_real')
-print(result)   #deve resultar em uma matriz identidade
+#result = newton(equations, initial_guess, args=(A, C))
+#print(result)
+# prova_real = np.dot(A, np.dot(result, C))
+# print('prova_real')
+# print(result)   #deve resultar em uma matriz identidade
 
 #structure = np.dot(result, np.dot(sqrt_S1, Vt1))   #CORRIGIR PERSPECTIVA
 structure = np.dot(sqrt_S1, Vt1)
