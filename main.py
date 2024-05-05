@@ -10,7 +10,7 @@ current_img = None
 all_points = []
 current_points = []
 
-image_directory = r'C:\Fontes\triedsohard\data\cube'
+image_directory = r'C:\Fontes\StructureFromMotion\data\cube'
 image_files = sorted(os.listdir(image_directory))
 
 cv2.namedWindow("Images", cv2.WINDOW_NORMAL)
@@ -25,13 +25,6 @@ def click_event(event, x, y, flags, param):
         cv2.circle(current_img, (x, y), 3, (0, 0, 255), -1)
         cv2.putText(current_img, str(len(current_points)), (x-10, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
         cv2.imshow("Images", current_img)
-
-def equations(variables, A, C):
-    B = variables.reshape((3, 3))
-    eq1 = np.dot(np.dot(A.T, B), A) - 1
-    eq2 = np.dot(np.dot(C.T, B), C) - 1
-    eq3 = np.dot(np.dot(A.T, B), C)
-    return np.concatenate((eq1.flatten(), eq2.flatten(), eq3.flatten()))
 
 for image_file in image_files:
     if previous_img is not None:
@@ -102,22 +95,10 @@ Vt1 = Vt[:3,:]
 print("\nU1: {}x{}; S1: {}x{}; Vt1: {}x{};".format(U1.shape[0], U1.shape[1], S1.shape[0], S1.shape[1], Vt1.shape[0], Vt1.shape[1]))
 
 motion = np.dot(U1, sqrt_S1)
-print("motion {}x{}".format(motion.shape[0], motion.shape[1]))
-middle = motion.shape[0] // 2
-A = motion[:middle, :] #iValues
-C = motion[middle:, :] #jValues
-A = motion[:3]
-C = motion[:3]
+print("MOTION {}x{}".format(motion.shape[0], motion.shape[1]))
 
-initial_guess = np.random.rand(3, 3)
+print(motion)
 
-#result = newton(equations, initial_guess, args=(A, C))
-#print(result)
-# prova_real = np.dot(A, np.dot(result, C))
-# print('prova_real')
-# print(result)   #deve resultar em uma matriz identidade
-
-#structure = np.dot(result, np.dot(sqrt_S1, Vt1))   #CORRIGIR PERSPECTIVA
 structure = np.dot(sqrt_S1, Vt1)
 
 structure = np.transpose(structure)
