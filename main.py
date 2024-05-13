@@ -101,6 +101,9 @@ print(motion)
 
 structure = np.dot(sqrt_S1, Vt1)
 
+print("STRUCTURE:")
+print(structure)
+
 structure = np.transpose(structure)
 
 M, N = structure.shape
