@@ -4,6 +4,7 @@ import numpy as np
 from scipy.optimize import newton
 from scipy.optimize import least_squares
 from scipy.linalg import cholesky
+import open3d as o3d
 
 previous_img = None
 current_img = None
@@ -56,57 +57,98 @@ for image_file in image_files:
     all_points.append(current_points)
     current_points = []
 
-pontos_medios = np.array([np.mean(linha, axis=0) for linha in all_points])
-pontos_medios = [tuple(ponto) for ponto in pontos_medios]
-
-print(pontos_medios)
-
-#Todo: UTILIZAR METODO DE PIXELMATCH
 all_points = np.array(all_points)
-print("\nall_points: {}x{};".format(all_points.shape[0], all_points.shape[1]))
+# print('---------------------------------------------------------------')
+# print(all_points)
+# print('---------------------------------------------------------------')
+# print("\nall_points: {}x{};".format(W.shape[0], W.shape[1]))
+# all_points = np.array([[[322, 337], [443, 319], [323, 477], [436, 453], [253, 374], [250, 261], [346, 250]],
+# [[310, 333], [436, 320], [313, 475], [430, 457], [260, 372], [255, 259], [356, 250]],
+# [[306, 335], [434, 321], [307, 475], [426, 457], [262, 371], [258, 259], [359, 251]],
+# [[299, 333], [427, 324], [300, 474], [423, 461], [266, 372], [264, 257], [363, 252]],
+# [[294, 331], [424, 324], [298, 472], [420, 461], [270, 368], [268, 256], [369, 251]]])
 
-matriz_diferencas = np.zeros_like(all_points)
-for i, linha in enumerate(all_points):
-    for j, ponto in enumerate(linha):
-        diff_x = ponto[0] - pontos_medios[i][0]
-        diff_y = ponto[1] - pontos_medios[i][1]
-        matriz_diferencas[i][j] = (diff_x, diff_y)
+coordenadas_x = all_points[:,:,0]
+coordenadas_y = all_points[:,:,1]
 
-coordenadas_x = [[ponto[0] for ponto in linha] for linha in matriz_diferencas]
-coordenadas_y = [[ponto[1] for ponto in linha] for linha in matriz_diferencas]
-matriz_separada = coordenadas_x + coordenadas_y
+nFrames = all_points.shape[0]
+nPoints = all_points.shape[1]
 
-np.savetxt("matriz_entrada_tomasi_kanade.txt", matriz_separada, fmt='%.2f')
+print('nFrames: ', nFrames, 'nPoints: ', nPoints)
 
-matriz_diferencas = np.array(matriz_diferencas)
-print("\nmatriz_diferencas: {}x{};".format(matriz_diferencas.shape[0], matriz_diferencas.shape[1]))
+all_points = np.zeros((2*nFrames, nPoints))
+all_points[:nFrames, :] = coordenadas_x
+all_points[nFrames:2 * nFrames, :] = coordenadas_y
 
-matriz_separada = np.array(matriz_separada)
-print("\nmatriz_separada: {}x{};".format(matriz_separada.shape[0], matriz_separada.shape[1]))
+matriz_separada = all_points - np.mean(all_points, axis=1)[:, None]
+matriz_separada = matriz_separada.astype('float32')
 
-U, S, Vt = np.linalg.svd(matriz_separada)
-S = np.diag(S) #Criar matriz sigma
-print("\nU: {}x{}; S: {}x{}; Vt: {}x{};".format(U.shape[0], U.shape[1], S.shape[0], S.shape[1], Vt.shape[0], Vt.shape[1]))
+#print(w_bar)
+U, S, Vt = np.linalg.svd(matriz_separada, full_matrices=False)
+S = np.diag(S)[:3, :3]
+U = U[:, :3]
+Vt = Vt[:3, :]
 
-U1 = U[:,:3]
-S1 = S[:3,:3]
-sqrt_S1 = np.sqrt(S1)
-Vt1 = Vt[:3,:]
-print("\nU1: {}x{}; S1: {}x{}; Vt1: {}x{};".format(U1.shape[0], U1.shape[1], S1.shape[0], S1.shape[1], Vt1.shape[0], Vt1.shape[1]))
+structure = np.dot(np.sqrt(S), Vt)
+motion = np.dot(U, np.sqrt(S))
 
-motion = np.dot(U1, sqrt_S1)
-print("MOTION {}x{}".format(motion.shape[0], motion.shape[1]))
+motion_i = motion[0:nFrames, :]
+motion_j = motion[nFrames:2 * nFrames, :]
 
-print(motion)
+A = np.zeros((2 * nFrames, 6))
+for i in range(nFrames):
+    A[2 * i, 0] = (motion_i[i, 0] ** 2) - (motion_j[i, 0] ** 2)
+    A[2 * i, 1] = 2 * ((motion_i[i, 0] * motion_i[i, 1]) - (motion_j[i, 0] * motion_j[i, 1]))
+    A[2 * i, 2] = 2 * ((motion_i[i, 0] * motion_i[i, 2]) - (motion_j[i, 0] * motion_j[i, 2]))
+    A[2 * i, 3] = (motion_i[i, 1] ** 2) - (motion_j[i, 1] ** 2)
+    A[2 * i, 5] = (motion_i[i, 2] ** 2) - (motion_j[i, 2] ** 2)
+    A[2 * i, 4] = 2 * ((motion_i[i, 2] * motion_i[i, 1]) - (motion_j[i, 2] * motion_j[i, 1]))
 
-structure = np.dot(sqrt_S1, Vt1)
+    A[2 * i + 1, 0] = motion_i[i, 0] * motion_j[i, 0]
+    A[2 * i + 1, 1] = motion_i[i, 1] * motion_j[i, 0] + motion_i[i, 0] * motion_j[i, 1]
+    A[2 * i + 1, 2] = motion_i[i, 2] * motion_j[i, 0] + motion_i[i, 0] * motion_j[i, 2]
+    A[2 * i + 1, 3] = motion_i[i, 1] * motion_j[i, 1]
+    A[2 * i + 1, 4] = motion_i[i, 2] * motion_j[i, 1] + motion_i[i, 1] * motion_j[i, 2]
+    A[2 * i + 1, 5] = motion_i[i, 2] * motion_j[i, 2]
 
-print("STRUCTURE:")
-print(structure)
+U1, S1, V1 = np.linalg.svd(A, full_matrices=False)
+v = np.transpose(V1)[:, -1]
+QQt = np.zeros((3, 3))
+print(v[0])
+print(v[3])
+print(v[5])
 
-structure = np.transpose(structure)
+QQt[0, 0] = v[0]
+QQt[1, 1] = v[3]
+QQt[2, 2] = v[5]
+QQt[0, 1] = v[1]
+QQt[1, 0] = v[1]
+QQt[0, 2] = v[2]
+QQt[2, 0] = v[2]
+QQt[2, 1] = v[4]
+QQt[1, 2] = v[4]
 
-M, N = structure.shape
-np.savetxt('structure.xyz', structure, fmt='%.2f', delimiter=' ', header=f"{M}\nStructure\n", comments='')
+Q = np.linalg.cholesky(QQt)
+
+R = np.dot(motion, Q)
+
+Qt = np.linalg.inv(Q)
+
+S = np.dot(Qt, structure)
+
+X = S[0, :]
+Y = S[1, :]
+Z = S[2, :]
+
+pointcloud = np.zeros((X.shape[0], 3))
+pointcloud[:,0] = X
+pointcloud[:,1] = Y
+pointcloud[:,2] = Z
+
+pcd = o3d.geometry.PointCloud()
+pcd.points = o3d.utility.Vector3dVector(pointcloud)
+o3d.io.write_point_cloud("pointcloud.ply", pcd)
+pcd_load = o3d.io.read_point_cloud("pointcloud.ply")
+o3d.visualization.draw_geometries([pcd_load])
 
 cv2.destroyAllWindows()
